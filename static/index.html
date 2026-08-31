@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KisanSetu - Public Agricultural Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 font-sans p-4 max-w-md mx-auto min-h-screen flex flex-col justify-between">
+
+    <div>
+        <!-- Header -->
+        <header class="bg-emerald-700 text-white p-4 rounded-xl shadow-md mb-4 text-center">
+            <h1 class="text-xl font-bold">KisanSetu (किसान सेतु)</h1>
+            <p class="text-xs text-emerald-100">AI Public Service Portal • Independent Prototype</p>
+        </header>
+
+        <!-- Instant Test Credentials / Quick Demo Login -->
+        <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 mb-4">
+            <p class="text-xs font-bold text-amber-800 mb-1 uppercase tracking-wider">Instant Test Credentials (For Judges):</p>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="loginAs('MOCK-AADHAAR-1001')" class="bg-white border border-amber-300 text-amber-900 text-xs p-2 rounded-lg text-left hover:bg-amber-100">
+                    <span class="font-bold block">Ramesh Kumar</span>
+                    <span class="text-[10px] text-slate-500">Active Installments</span>
+                </button>
+                <button onclick="loginAs('MOCK-AADHAAR-1002')" class="bg-white border border-amber-300 text-amber-900 text-xs p-2 rounded-lg text-left hover:bg-amber-100">
+                    <span class="font-bold block">Sita Devi</span>
+                    <span class="text-[10px] text-slate-500">Pending e-KYC</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Input Section -->
+        <div class="bg-white p-4 rounded-xl shadow-sm mb-4 border border-slate-200">
+            <label class="block text-sm font-semibold mb-2 text-slate-700">Citizen Query / Voice Prompt:</label>
+            <textarea id="userInput" rows="3" class="w-full p-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Type or click a test credential above..."></textarea>
+            
+            <button onclick="sendQuery()" class="w-full mt-2 bg-emerald-600 text-white py-2 rounded-lg font-medium text-sm hover:bg-emerald-700 transition">Execute Citizen Journey</button>
+        </div>
+
+        <!-- Output Display -->
+        <div id="outputCard" class="hidden bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Citizen Status Card</h2>
+            <div id="outputContent" class="text-sm space-y-2"></div>
+        </div>
+    </div>
+
+    <!-- Footer Disclaimer -->
+    <footer class="text-center py-4 text-xs text-slate-400">
+        Build What Moves India Prototype • Uses Synthetic Mock Data Only
+    </footer>
+
+    <script>
+        function loginAs(tokenId) {
+            document.getElementById('userInput').value = `Check status for demo token ${tokenId}`;
+            sendQuery();
+        }
+
+        async function sendQuery() {
+            const input = document.getElementById('userInput').value;
+            if(!input) return;
+
+            const card = document.getElementById('outputCard');
+            const content = document.getElementById('outputContent');
+            card.classList.remove('hidden');
+            content.innerHTML = `<p class="text-slate-500 italic text-xs">Querying mock backend via OpenAI agent...</p>`;
+
+            try {
+                const res = await fetch('/api/assistant', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ prompt: input })
+                });
+                const result = await res.json();
+
+                if(result.success && result.data) {
+                    const d = result.data;
+                    content.innerHTML = `
+                        <div class="p-3 bg-emerald-50 rounded-lg border border-emerald-200 text-emerald-900">
+                            <p class="font-bold text-base">${d.name}</p>
+                            <p class="text-xs text-slate-600">${d.state}</p>
+                            <hr class="my-2 border-emerald-200">
+                            <p class="text-sm"><strong>Status:</strong> ${d.status}</p>
+                            <p class="text-sm"><strong>Last Payment:</strong> ${d.last_payment}</p>
+                            ${d.pending_reason !== 'None' ? `<p class="text-red-600 text-xs mt-1"><strong>Action Required:</strong> ${d.pending_reason}</p>` : ''}
+                        </div>
+                    `;
+                } else {
+                    content.innerHTML = `<p class="text-slate-700 text-sm">${result.message}</p>`;
+                }
+            } catch(e) {
+                content.innerHTML = `<p class="text-red-500 text-sm">Failed to connect to backend server.</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
